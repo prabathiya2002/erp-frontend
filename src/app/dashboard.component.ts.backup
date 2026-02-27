@@ -1,0 +1,246 @@
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
+import { AccountsService, JournalsService } from './services';
+
+@Component({
+  standalone: true,
+  selector: 'app-dashboard',
+  imports: [CommonModule, RouterModule],
+  template: `
+    <!-- Financial Summary Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Assets</div>
+        <div class="stat-value">&#36;{{stats.assets.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}}</div>
+        <i class="fas fa-wallet stat-icon"></i>
+      </div>
+      <div class="stat-card success">
+        <div class="stat-label">Total Liabilities</div>
+        <div class="stat-value">&#36;{{stats.liabilities.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}}</div>
+        <i class="fas fa-credit-card stat-icon"></i>
+      </div>
+      <div class="stat-card info">
+        <div class="stat-label">Total Equity</div>
+        <div class="stat-value">&#36;{{stats.equity.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}}</div>
+        <i class="fas fa-chart-pie stat-icon"></i>
+      </div>
+      <div class="stat-card warning">
+        <div class="stat-label">Total Revenue</div>
+        <div class="stat-value">&#36;{{stats.revenue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}}</div>
+        <i class="fas fa-dollar-sign stat-icon"></i>
+      </div>
+      <div class="stat-card danger">
+        <div class="stat-label">Total Expenses</div>
+        <div class="stat-value">&#36;{{stats.expenses.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}}</div>
+        <i class="fas fa-receipt stat-icon"></i>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Net Income</div>
+        <div class="stat-value" [style.color]="stats.netIncome >= 0 ? '#28a745' : '#dc3545'">
+          &#36;{{stats.netIncome.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}}
+        </div>
+        <i class="fas fa-chart-line stat-icon"></i>
+      </div>
+    </div>
+
+    <!-- Main Cards -->
+    <div class="cards-container">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-book"></i> Chart of Accounts</h3>
+        </div>
+        <div class="card-value">{{stats.accounts}}</div>
+        <div class="card-trend positive">
+          <i class="fas fa-check-circle"></i>
+          <span>Active accounts</span>
+        </div>
+        <p style="margin-top: 15px; color: #666;">All account types configured</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-file-alt"></i> Journal Entries</h3>
+        </div>
+        <div class="card-value">{{stats.journals}}</div>
+        <div class="card-trend positive">
+          <i class="fas fa-arrow-up"></i>
+          <span>{{stats.posted}} posted</span>
+        </div>
+        <p style="margin-top: 15px; color: #666;">{{stats.pending}} pending approval</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-balance-scale"></i> Accounting Equation</h3>
+        </div>
+        <div class="card-value" style="font-size: 1.2rem;" [style.color]="stats.isBalanced ? '#28a745' : '#dc3545'">
+          {{stats.isBalanced ? 'Balanced ✓' : 'Unbalanced ✗'}}
+        </div>
+        <div class="card-trend" [ngClass]="stats.isBalanced ? 'positive' : 'negative'">
+          <i class="fas" [ngClass]="stats.isBalanced ? 'fa-check-circle' : 'fa-exclamation-triangle'"></i>
+          <span>Assets = Liabilities + Equity</span>
+        </div>
+        <p style="margin-top: 15px; color: #666; font-size: 0.9rem;">
+          &#36;{{stats.assets.toFixed(2)}} = &#36;{{(stats.liabilities + stats.equity).toFixed(2)}}
+        </p>
+      </div>
+    </div>
+
+    <!-- Quick Actions Section -->
+    <div class="module-section">
+      <div class="section-header">
+        <h2 class="section-title"><i class="fas fa-bolt"></i> Quick Actions</h2>
+      </div>
+      <div class="action-buttons">
+        <button class="btn btn-primary" routerLink="/journals">
+          <i class="fas fa-plus"></i> New Journal Entry
+        </button>
+        <button class="btn btn-success" routerLink="/accounts">
+          <i class="fas fa-book"></i> Add Account
+        </button>
+        <button class="btn btn-info" routerLink="/trial-balance">
+          <i class="fas fa-file-export"></i> View Trial Balance
+        </button>
+        <button class="btn btn-warning" routerLink="/recon">
+          <i class="fas fa-sync"></i> Reconcile Bank
+        </button>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="module-section">
+      <div class="section-header">
+        <h2 class="section-title"><i class="fas fa-history"></i> Recent Activity</h2>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Description</th>
+              <th>Amount</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="recentActivity.length === 0">
+              <td colspan="5" style="text-align: center; padding: 20px; color: #999;">
+                No activity yet. Create journal entries to see them here.
+              </td>
+            </tr>
+            <tr *ngFor="let activity of recentActivity">
+              <td>{{activity.date}}</td>
+              <td>{{activity.type}}</td>
+              <td>{{activity.description}}</td>
+              <td>&#36;{{activity.amount.toLocaleString()}}</td>
+              <td><span class="badge" [ngClass]="getStatusBadge(activity.status)">{{activity.status}}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `
+})
+export class DashboardComponent implements OnInit {
+  stats = {
+    accounts: 0,
+    liabilities: 0,
+    equity: 0,
+    revenue: 0,
+    expenses: 0,
+    netIncome: 0,
+    isBalanced: true0,
+    pending: 0,
+    posted: 0,
+    assets: 0,
+    revenue: 0
+  };
+
+  recentActivity: any[] = [];
+
+  constructor(
+    private accountsService: AccountsService,
+    private journalsService: JournalsService
+  ) {}
+
+  ngOnInit() {and calculate all financial totals
+    this.accountsService.list().subscribe((accounts: any) => {
+      this.stats.accounts = accounts.length;
+      
+      // Calculate totals for each account type
+      this.stats.assets = accounts
+        .filter((a: any) => a.type === 'ASSET')
+        .reduce((sum: number, a: any) => sum + (a.balance || 0), 0);
+      
+      this.stats.liabilities = accounts
+        .filter((a: any) => a.type === 'LIABILITY')
+        .reduce((sum: number, a: any) => sum + (a.balance || 0), 0);
+      
+      this.stats.equity = accounts
+        .filter((a: any) => a.type === 'EQUITY')
+        .reduce((sum: number, a: any) => sum + (a.balance || 0), 0);
+      
+      this.stats.revenue = accounts
+        .filter((a: any) => a.type === 'REVENUE')
+        .reduce((sum: number, a: any) => sum + (a.balance || 0), 0);
+      
+      this.stats.expenses = accounts
+        .filter((a: any) => a.type === 'EXPENSE')
+        .reduce((sum: number, a: any) => sum + (a.balance || 0), 0);
+      
+      // Calculate net income (Revenue - Expenses)
+      this.stats.netIncome = this.stats.revenue - this.stats.expenses;
+      
+      // Check if accounting equation is balanced: Assets = Liabilities + Equity
+      const difference = Math.abs(this.stats.assets - (this.stats.liabilities + this.stats.equity));
+      this.stats.isBalanced = difference < 0.01; // Allow for minor floating point differences
+    });
+
+    // Load journals statistics
+    this.journalsService.list().subscribe((journals: any) => {
+      this.stats.journals = journals.length;
+      this.stats.pending = journals.filter((j: any) => j.status === 'DRAFT' || j.status === 'APPROVAL').length;
+      this.stats.posted = journals.filter((j: any) => j.status === 'POSTED').length;
+      
+      // Get recent activity (last 10 journals)
+      this.recentActivity = journals
+        .slice(-10)
+        .reverse()
+        .map((j: any) => ({
+          date: j.date,
+          type: 'Journal Entry',
+          description: this.getJournalDescription(j),
+          amount: this.calculateJournalAmount(j),
+          status: j.status
+        }));
+    });
+  }
+  
+  getJournalDescription(journal: any): string {
+    if (journal.description) return journal.description;
+    if (journal.lines && journal.lines.length >= 2) {
+      return `Journal Entry #${journal.id} (${journal.lines.length} lines)`;
+    }
+    return `Journal Entry #${journal.id}`    type: 'Journal Entry',
+          description: j.description || 'Journal Entry #' + j.id,
+          amount: this.calculateJournalAmount(j),
+          status: j.status
+        }));
+    });
+  }
+
+  calculateJournalAmount(journal: any): number {
+    if (!journal.lines || journal.lines.length === 0) return 0;
+    return journal.lines.reduce((sum: number, line: any) => sum + (line.debit || 0), 0);
+  }
+
+  getStatusBadge(status: string): string {
+    switch(status) {
+      case 'POSTED': return 'badge-success';
+      case 'APPROVAL': return 'badge-warning';
+      default: return 'badge-info';
+    }
+  }
+}
