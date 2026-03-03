@@ -2,6 +2,9 @@
   "name": "erp-finance-frontend",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+  "node": "18.x"
+},
   "scripts": {
     "start": "ng serve --proxy-config proxy.conf.json",
     "build": "ng build"
