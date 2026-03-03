@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@angular/animations": "17.3.0",
+    "@angular/cdk": "^17.3.10",
     "@angular/common": "17.3.0",
     "@angular/compiler": "17.3.0",
     "@angular/core": "17.3.0",
@@ -15,6 +16,8 @@
     "@angular/platform-browser": "17.3.0",
     "@angular/platform-browser-dynamic": "17.3.0",
     "@angular/router": "17.3.0",
+    "chart.js": "^4.5.1",
+    "ng2-charts": "^5.0.4",
     "primeicons": "^7.0.0",
     "primeng": "^17.18.15",
     "rxjs": "7.8.1",
